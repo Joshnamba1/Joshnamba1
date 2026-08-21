@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Surprise!</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #fff0f5; /* Starting color: LavenderBlush pink */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+        
+        /* 🎨 Background Change Button */
+        #bg-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.8rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 1x1 Square Box (Initial State) with smooth expansion transition */
+        #game-container {
+            width: 90vw;
+            height: 90vw;
+            max-width: 480px;
+            max-height: 480px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(220, 20, 60, 0.15);
+            position: relative;
+            text-align: center;
+            overflow: hidden;
+            z-index: 10;
+            /* 🌟 Smooth animation for expanding size */
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                        height 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                        max-width 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                        max-height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ✉️ Expanded State for Long Letters */
+        #game-container.expanded {
+            width: 92vw;
+            height: 80vh;
+            max-width: 650px;
+            max-height: 700px;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #ff1493;
+            font-weight: bold;
+            padding: 0 10px;
+            transition: opacity 0.5s ease;
+        }
+
+        #heart-btn {
+            font-size: 3rem;
+            position: absolute;
+            background: none;
+            border: none;
+            cursor: pointer;
+            top: 40%;
+            left: 40%;
+            transition: top 0.2s, left 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Envelope Button Animation */
+        #envelope-wrapper {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        #envelope-btn {
+            font-size: 1.5rem;
+            padding: 20px 45px;
+            background-color: #dc143c;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(220, 20, 60, 0.4);
+            transition: transform 0.2s ease, background-color 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #envelope-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 📜 Letter Animation & Scroll Styling */
+        #letter {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+            transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+            padding: 30px 25px;
+            font-size: 1.15rem;
+            line-height: 1.6;
+            color: #8b0000;
+            font-style: italic;
+            text-align: left;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        #letter.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* ✨ Tap Effect Animation */
+        .tap-heart {
+            position: absolute;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -150px) scale(1.5); }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="bg-btn" title="Change Background">🎨</button>
+
+    <div id="game-container">
+        <div id="instructions">Catch the heart 5 times to unlock your surprise!</div>
+        
+        <button id="heart-btn">❤️</button>
+        
+        <div id="envelope-wrapper">
+            <button id="envelope-btn">💌 Tap to Open</button>
+        </div>
+        
+        <div id="letter">My Dearest [Her Name],
+
+You caught my heart, just like you caught it in this game!
+
+I wanted to make something unique to show you how much you mean to me. Thank you for being the most amazing, kind, and beautiful person in my life. Every day with you is a gift that I cherish deeply.
+
+You can write as much as you want here now, and the app will expand smoothly to display all your heartfelt words perfectly!
+
+Happy Valentine's Day!
+
+Love forever,
+[Your Name] ❤️</div>
+    </div>
+
+    <audio id="popSound" src="pop.mp3"></audio>
+
+    <script>
+        // --- 1. GAME LOGIC ---
+        let score = 0;
+        const winningScore = 5;
+        const heartBtn = document.getElementById('heart-btn');
+        const envelopeWrapper = document.getElementById('envelope-wrapper');
+        const envelopeBtn = document.getElementById('envelope-btn');
+        const letter = document.getElementById('letter');
+        const instructions = document.getElementById('instructions');
+        const popSound = document.getElementById('popSound');
+        const container = document.getElementById('game-container');
+
+        heartBtn.addEventListener('click', (e) => {
+            // Play sound
+            popSound.currentTime = 0;
+            popSound.play().catch(e => console.log("Audio requires user interaction first"));
+            
+            score++;
+            
+            if (score >= winningScore) {
+                heartBtn.style.display = 'none';
+                instructions.innerText = "You got a letter!";
+                envelopeWrapper.style.display = 'block';
+            } else {
+                // Move heart randomly inside the 1x1 container
+                const maxX = container.clientWidth - 60; 
+                const maxY = container.clientHeight - 60;
+                
+                const newX = Math.floor(Math.random() * (maxX - 10)) + 10;
+                const newY = Math.floor(Math.random() * (maxY - 60)) + 60;
+                
+                heartBtn.style.left = newX + 'px';
+                heartBtn.style.top = newY + 'px';
+            }
+        });
+
+        // Envelope Open & Expansion Animation
+        envelopeBtn.addEventListener('click', () => {
+            // 1. Play pop sound on envelope open
+            popSound.currentTime = 0;
+            popSound.play().catch(e => console.log("Audio play allowed"));
+
+            // 2. Hide instructions & envelope wrapper with fade
+            instructions.style.opacity = '0';
+            envelopeWrapper.style.opacity = '0';
+            
+            setTimeout(() => {
+                instructions.style.display = 'none';
+                envelopeWrapper.style.display = 'none';
+            }, 400);
+
+            // 3. Expand the container smoothly to fit the long letter
+            container.classList.add('expanded');
+
+            // 4. Reveal the letter with unfolding animation
+            setTimeout(() => {
+                letter.style.display = 'block';
+                // Trigger reflow for CSS animation
+                void letter.offsetWidth; 
+                letter.classList.add('visible');
+            }, 400);
+        });
+
+        // --- 2. CHANGEABLE BACKGROUND LOGIC ---
+        const bgColors = ['#fff0f5', '#ffe4e1', '#e6e6fa', '#ffb6c1', '#f0f8ff', '#ffefd5'];
+        let colorIndex = 0;
+        const bgBtn = document.getElementById('bg-btn');
+
+        bgBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            colorIndex = (colorIndex + 1) % bgColors.length;
+            document.body.style.backgroundColor = bgColors[colorIndex];
+        });
+
+        // --- 3. TAP EFFECT LOGIC ---
+        document.addEventListener('pointerdown', (e) => {
+            if (e.target.id === 'bg-btn' || e.target.id === 'heart-btn' || e.target.id === 'envelope-btn') return;
+
+            const tapHeart = document.createElement('div');
+            tapHeart.innerHTML = '💖';
+            tapHeart.className = 'tap-heart';
+            
+            tapHeart.style.left = e.pageX + 'px';
+            tapHeart.style.top = e.pageY + 'px';
+            
+            document.body.appendChild(tapHeart);
+
+            setTimeout(() => {
+                tapHeart.remove();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
